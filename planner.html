@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مخطّطي — مولّد الخطط بالذكاء الاصطناعي</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;500;700&display=swap');
+
+  :root {
+    --ink:    #1a1a2e;
+    --paper:  #f7f5f0;
+    --accent: #4f46e5;
+    --soft:   #e8e5ff;
+    --muted:  #6b6b8a;
+    --border: #dddaf5;
+    --green:  #059669;
+    --amber:  #d97706;
+    --red:    #dc2626;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Tajawal', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: #fff;
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .logo-mark {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border-radius: 12px;
+    display: grid; place-items: center;
+    font-size: 1.4rem;
+  }
+  header h1 { font-family: 'Cairo', sans-serif; font-size: 1.5rem; font-weight: 900; letter-spacing: -0.02em; }
+  header p  { font-size: .82rem; color: #a0a0c0; margin-top: 1px; }
+
+  /* ── LAYOUT ── */
+  .shell {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 2rem 1.5rem;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  /* ── PANEL ── */
+  .panel {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+
+  .panel-title {
+    font-family: 'Cairo', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .panel-title span { font-size: 1.1rem; }
+
+  /* ── FORM ELEMENTS ── */
+  label {
+    display: block;
+    font-size: .82rem;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: .4rem;
+  }
+
+  .field { display: flex; flex-direction: column; }
+
+  input[type="text"], textarea, select {
+    font-family: 'Tajawal', sans-serif;
+    font-size: .95rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: .65rem 1rem;
+    outline: none;
+    transition: border-color .2s;
+    resize: vertical;
+    direction: rtl;
+  }
+  input[type="text"]:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    background: #fff;
+  }
+
+  /* mode tabs */
+  .tabs { display: flex; gap: .5rem; }
+  .tab {
+    flex: 1; padding: .55rem; border-radius: 9px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-family: 'Tajawal', sans-serif;
+    font-size: .88rem; font-weight: 600;
+    color: var(--muted); cursor: pointer;
+    transition: all .2s;
+  }
+  .tab.active {
+    background: var(--soft); border-color: var(--accent); color: var(--accent);
+  }
+
+  /* priorities */
+  .priority-row { display: flex; gap: .5rem; }
+  .priority-btn {
+    flex: 1; padding: .45rem; border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-family: 'Tajawal', sans-serif;
+    font-size: .82rem; font-weight: 600;
+    cursor: pointer; transition: all .2s;
+  }
+  .priority-btn.high   { color: var(--red);   }
+  .priority-btn.medium { color: var(--amber);  }
+  .priority-btn.low    { color: var(--green);  }
+  .priority-btn.active.high   { background: #fef2f2; border-color: var(--red);   }
+  .priority-btn.active.medium { background: #fffbeb; border-color: var(--amber); }
+  .priority-btn.active.low    { background: #ecfdf5; border-color: var(--green); }
+
+  /* generate button */
+  .btn-generate {
+    width: 100%;
+    padding: .85rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+    transition: opacity .2s, transform .15s;
+  }
+  .btn-generate:hover  { opacity: .9; transform: translateY(-1px); }
+  .btn-generate:active { transform: translateY(0); }
+  .btn-generate:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* ── OUTPUT ── */
+  .output-area {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .output-header {
+    padding: 1.2rem 1.8rem;
+    border-bottom: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .output-header h2 { font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 700; }
+  .badge {
+    font-size: .72rem; font-weight: 600; padding: .25rem .7rem;
+    border-radius: 99px; background: var(--soft); color: var(--accent);
+  }
+
+  .output-body {
+    flex: 1; padding: 1.8rem;
+    font-size: .93rem; line-height: 1.8;
+    white-space: pre-wrap;
+    overflow-y: auto;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .8rem; color: var(--muted); text-align: center;
+    padding: 3rem;
+  }
+  .empty-state .icon { font-size: 3rem; opacity: .4; }
+  .empty-state p     { font-size: .9rem; max-width: 220px; line-height: 1.6; }
+
+  /* streamed markdown */
+  .plan-section { margin-bottom: 1.2rem; }
+  .plan-section h3 {
+    font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 1rem;
+    color: var(--accent); margin-bottom: .5rem;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .plan-item {
+    padding: .55rem .9rem;
+    background: var(--paper); border-radius: 9px;
+    margin-bottom: .4rem;
+    border-right: 3px solid var(--border);
+  }
+  .plan-item.high   { border-color: var(--red);   }
+  .plan-item.medium { border-color: var(--amber);  }
+  .plan-item.low    { border-color: var(--green);  }
+
+  .typing-cursor {
+    display: inline-block; width: 2px; height: 1em;
+    background: var(--accent); margin-right: 2px;
+    animation: blink .7s step-end infinite;
+    vertical-align: text-bottom;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* copy button */
+  .btn-copy {
+    padding: .4rem 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px; background: transparent;
+    font-family: 'Tajawal', sans-serif;
+    font-size: .82rem; font-weight: 600; color: var(--muted);
+    cursor: pointer; transition: all .2s;
+  }
+  .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* loading spinner */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 760px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">🗓</div>
+  <div>
+    <h1>مخطّطي</h1>
+    <p>مولّد الخطط اليومية والأسبوعية بالذكاء الاصطناعي</p>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ── INPUT PANEL ── -->
+  <div class="panel">
+
+    <div class="panel-title"><span>⚙️</span> الإعدادات</div>
+
+    <div class="field">
+      <label>نوع الخطة</label>
+      <div class="tabs">
+        <button class="tab active" onclick="setMode('daily',this)">📅 يومية</button>
+        <button class="tab" onclick="setMode('weekly',this)">🗓 أسبوعية</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>اسمك (اختياري)</label>
+      <input type="text" id="userName" placeholder="مثال: أحمد">
+    </div>
+
+    <div class="field">
+      <label>المهام والأهداف (كل سطر مهمة)</label>
+      <textarea id="tasks" rows="6" placeholder="مثال:&#10;مراجعة تقرير العمل&#10;التمرين الرياضي&#10;قراءة ٣٠ دقيقة&#10;الرد على الرسائل"></textarea>
+    </div>
+
+    <div class="field">
+      <label>مستوى الأولوية العام</label>
+      <div class="priority-row">
+        <button class="priority-btn high"   onclick="setPriority('high',this)">🔴 عالية</button>
+        <button class="priority-btn medium active" onclick="setPriority('medium',this)">🟡 متوسطة</button>
+        <button class="priority-btn low"    onclick="setPriority('low',this)">🟢 منخفضة</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>وقت البداية المفضّل</label>
+      <input type="text" id="startTime" placeholder="مثال: 7:00 صباحاً">
+    </div>
+
+    <div class="field">
+      <label>ملاحظات إضافية (اختياري)</label>
+      <textarea id="notes" rows="3" placeholder="مثال: لديّ اجتماع الساعة ١١، أحتاج فترة راحة بعد الظهر..."></textarea>
+    </div>
+
+    <button class="btn-generate" id="genBtn" onclick="generate()">
+      <span id="btnIcon">✨</span>
+      <span id="btnText">توليد الخطة</span>
+    </button>
+
+  </div>
+
+  <!-- ── OUTPUT PANEL ── -->
+  <div class="output-area">
+    <div class="output-header">
+      <h2>خطّتك</h2>
+      <div style="display:flex;gap:.6rem;align-items:center;">
+        <span class="badge" id="modeBadge">يومية</span>
+        <button class="btn-copy" id="copyBtn" onclick="copyPlan()" style="display:none">📋 نسخ</button>
+      </div>
+    </div>
+    <div class="output-body" id="outputBody">
+      <div class="empty-state">
+        <div class="icon">🌟</div>
+        <p>أدخل مهامك واضغط «توليد الخطة» للحصول على جدولك المنظّم</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let mode = 'daily';
+  let priority = 'medium';
+  let fullPlanText = '';
+
+  function setMode(m, btn) {
+    mode = m;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('modeBadge').textContent = m === 'daily' ? 'يومية' : 'أسبوعية';
+  }
+
+  function setPriority(p, btn) {
+    priority = p;
+    document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  async function generate() {
+    const tasks    = document.getElementById('tasks').value.trim();
+    const name     = document.getElementById('userName').value.trim();
+    const start    = document.getElementById('startTime').value.trim();
+    const notes    = document.getElementById('notes').value.trim();
+
+    if (!tasks) {
+      alert('الرجاء إدخال مهمة واحدة على الأقل.');
+      return;
+    }
+
+    // UI: loading state
+    const btn = document.getElementById('genBtn');
+    btn.disabled = true;
+    document.getElementById('btnIcon').innerHTML = '<div class="spinner"></div>';
+    document.getElementById('btnText').textContent = 'جاري التوليد...';
+
+    const outputBody = document.getElementById('outputBody');
+    outputBody.innerHTML = '<div class="empty-state"><div class="icon">⏳</div><p>يُحلّل الذكاء الاصطناعي مهامك ويُنشئ خطّتك...</p></div>';
+    document.getElementById('copyBtn').style.display = 'none';
+    fullPlanText = '';
+
+    const modeAr = mode === 'daily' ? 'يومية' : 'أسبوعية';
+    const priorityAr = priority === 'high' ? 'عالية' : priority === 'medium' ? 'متوسطة' : 'منخفضة';
+
+    const prompt = `أنت مساعد إنتاجية خبير. مهمتك إنشاء خطة ${modeAr} منظّمة وعملية باللغة العربية.
+
+المعلومات المُدخلة:
+- الاسم: ${name || 'المستخدم'}
+- نوع الخطة: ${modeAr}
+- مستوى الأولوية العام: ${priorityAr}
+- وقت البداية: ${start || 'غير محدد'}
+- المهام والأهداف:
+${tasks}
+${notes ? `- ملاحظات: ${notes}` : ''}
+
+أنشئ خطة ${modeAr} منظّمة تشمل:
+${mode === 'daily' ? `
+1. **ترحيب وملخّص اليوم** — جملة تحفيزية مخصّصة
+2. **جدول اليوم بالتفصيل** — قسّم اليوم إلى فترات (صباح / ظهر / مساء) مع توزيع المهام بتوقيتات مقترحة
+3. **أولويات اليوم الثلاث** — المهام الأهم التي يجب إنجازها حتماً
+4. **نصيحة إنتاجية** — نصيحة عملية مخصّصة لمهام اليوم
+` : `
+1. **ملخّص الأسبوع** — جملة تحفيزية وهدف الأسبوع الرئيسي
+2. **توزيع المهام على أيام الأسبوع** (الأحد إلى الخميس) — كل يوم له مهام محددة مع أوقات مقترحة
+3. **مهام عطلة نهاية الأسبوع** (الجمعة والسبت) — راحة وإنجاز خفيف
+4. **أهداف الأسبوع الرئيسية** — ٣ أهداف قابلة للقياس
+5. **نصيحة للأسبوع** — استراتيجية إنتاجية مناسبة
+`}
+
+اكتب الخطة بأسلوب واضح ومشجّع، استخدم الرموز التعبيرية بشكل معتدل، وكن محدداً وعملياً. لا تضف مقدمات غير ضرورية، ابدأ مباشرة بالخطة.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1500,
+          stream: true,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      outputBody.innerHTML = '';
+      const pre = document.createElement('div');
+      pre.id = 'streamDiv';
+      pre.style.cssText = 'white-space:pre-wrap;line-height:1.9;font-size:.93rem;';
+      outputBody.appendChild(pre);
+
+      const cursor = document.createElement('span');
+      cursor.className = 'typing-cursor';
+      pre.appendChild(cursor);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') continue;
+          try {
+            const obj = JSON.parse(data);
+            if (obj.type === 'content_block_delta' && obj.delta?.text) {
+              fullPlanText += obj.delta.text;
+              pre.insertBefore(document.createTextNode(obj.delta.text), cursor);
+            }
+          } catch {}
+        }
+      }
+
+      cursor.remove();
+      document.getElementById('copyBtn').style.display = 'block';
+
+    } catch (err) {
+      outputBody.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>حدث خطأ: ${err.message}</p></div>`;
+    } finally {
+      btn.disabled = false;
+      document.getElementById('btnIcon').textContent = '✨';
+      document.getElementById('btnText').textContent = 'توليد خطة جديدة';
+    }
+  }
+
+  function copyPlan() {
+    if (!fullPlanText) return;
+    navigator.clipboard.writeText(fullPlanText).then(() => {
+      const btn = document.getElementById('copyBtn');
+      const orig = btn.textContent;
+      btn.textContent = '✅ تم النسخ!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    });
+  }
+</script>
+</body>
+</html>
